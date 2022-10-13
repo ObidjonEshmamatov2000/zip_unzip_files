@@ -11,6 +11,11 @@
   <name>Archetype - zip_unzip_project</name>
   <url>http://maven.apache.org</url>
   <dependencies>
-
+    <!-- https://mvnrepository.com/artifact/commons-net/commons-net -->
+    <dependency>
+      <groupId>commons-net</groupId>
+      <artifactId>commons-net</artifactId>
+      <version>3.8.0</version>
+    </dependency>
   </dependencies>
 </project>

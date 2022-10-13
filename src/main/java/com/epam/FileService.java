@@ -1,6 +1,9 @@
 package com.epam;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -9,14 +12,20 @@ import java.util.zip.ZipOutputStream;
 
 public class FileService {
 
+
     public List<File> unzip(File zipFile) throws IOException{
         String destinationURL = System.getProperty("user.dir");
-        unzip(zipFile, destinationURL);
-        String zipFileName = zipFile.getName();
-        return getFilesList(destinationURL + "\\" + zipFileName.substring(0, zipFileName.length() - 4));
+        List<File> fileList = unzip(zipFile, destinationURL);
+        if (fileList != null || fileList.size() > 0) {
+            throw new IOException("Failed to unzip");
+        }
+        File parentFile = fileList.get(0).getParentFile();
+        deleteDirectory(parentFile);
+        return fileList;
     }
 
-    public String unzip(File zipFile, String destinationURL) throws IOException {
+    public List<File> unzip(File zipFile, String destinationURL) throws IOException {
+        List<File> fileList = new ArrayList<>();
         String fileName = zipFile.getName();
         File destDir = new File(destinationURL, fileName.substring(0, fileName.length() - 4));
         byte[] bytes = new byte[1024];
@@ -40,24 +49,13 @@ public class FileService {
                     fos.write(bytes, 0, len);
                 }
                 fos.close();
+                fileList.add(newFile);
             }
             zipEntry = zis.getNextEntry();
         }
         zis.closeEntry();
         zis.close();
-        return "successfully zipped to the given destination";
-    }
-
-    private File newFile(File destinationDir, ZipEntry zipEntry) throws IOException {
-        File destFile = new File(destinationDir, zipEntry.getName());
-        String destDirPath = destinationDir.getCanonicalPath();
-        String destFilePath = destFile.getCanonicalPath();
-
-        if (!destFilePath.startsWith(destDirPath + File.separator)) {
-            throw new IOException("Entry is outside of the target dir: " + zipEntry.getName());
-        }
-
-        return destFile;
+        return fileList;
     }
 
     public File zip(List<File> files, String zipFileName) throws IOException {
@@ -77,7 +75,9 @@ public class FileService {
         }
         zipOut.close();
         fos.close();
-        return new File(zipFileName);
+        File file = new File(zipFileName);
+        deleteDirectory(file);
+        return file;
     }
 
     public File zip(String folderURL, String zipFileName) throws IOException {
@@ -93,5 +93,30 @@ public class FileService {
             if (file.isFile()) files.add(file);
         }
         return files;
+    }
+
+    public void deleteDirectory(File file) {
+        File[] listFiles = file.listFiles();
+        if (listFiles != null) {
+            for (File subFile: file.listFiles()) {
+                if (subFile.isDirectory()) {
+                    deleteDirectory(subFile);
+                }
+                subFile.delete();
+            }
+        }
+        file.delete();
+    }
+
+    private File newFile(File destinationDir, ZipEntry zipEntry) throws IOException {
+        File destFile = new File(destinationDir, zipEntry.getName());
+        String destDirPath = destinationDir.getCanonicalPath();
+        String destFilePath = destFile.getCanonicalPath();
+
+        if (!destFilePath.startsWith(destDirPath + File.separator)) {
+            throw new IOException("Entry is outside of the target dir: " + zipEntry.getName());
+        }
+
+        return destFile;
     }
 }
